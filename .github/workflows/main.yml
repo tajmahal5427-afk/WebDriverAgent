@@ -3,27 +3,28 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: macos-latest # その時点での最新OSを自動選択
+    runs-on: macos-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Node.jsの警告を消す設定
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
       
-      - name: List available Xcodes
-        run: ls /Applications | grep Xcode # 使えるXcodeをログに出力して確認
-        
       - name: Build WebDriverAgent
         run: |
-          # パスを明示せず、現在選択されている最新のXcodeを使用する
+          # 署名(Code Signing)を無効化してビルドを実行
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
             -destination 'generic/platform=iOS' \
-            -derivedDataPath ./build
+            -derivedDataPath ./build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
       - name: Package to IPA
         run: |
           mkdir -p Payload
+          # ビルドされた .app ファイルを Payload フォルダにコピー
           cp -r ./build/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app Payload/
           zip -r WebDriverAgent.ipa Payload
 
