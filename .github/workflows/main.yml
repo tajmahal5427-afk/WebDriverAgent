@@ -3,23 +3,30 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-latest # その時点での最新OSを自動選択
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Node.jsの警告を消す設定
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_17.app
+      
+      - name: List available Xcodes
+        run: ls /Applications | grep Xcode # 使えるXcodeをログに出力して確認
+        
       - name: Build WebDriverAgent
         run: |
+          # パスを明示せず、現在選択されている最新のXcodeを使用する
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
             -destination 'generic/platform=iOS' \
             -derivedDataPath ./build
+
       - name: Package to IPA
         run: |
           mkdir -p Payload
           cp -r ./build/Build/Products/Debug-iphoneos/WebDriverAgentRunner-Runner.app Payload/
           zip -r WebDriverAgent.ipa Payload
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
